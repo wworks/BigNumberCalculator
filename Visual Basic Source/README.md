@@ -1,2 +1,9 @@
-# Expression-Evaluator
-An expression evaluator supporting +,-,*,/ and brackets. Written in VisualBasic.net and Javascript.
+# How to
+It simple, just put the BigNumberCalculator Class in your project, make a BigNumberCalculator instance and your ready to go!
+
+```VB
+Dim BigNumberCalculator As New BigNumberCalculator
+
+MsgBox(BigNumberCalculator.Add("123","456"))
+```
+
