@@ -267,21 +267,21 @@ Public Class BigNumberCalculator
             End If
 
             'Doing the actual division work.
-            Dim Number As String = ""
+            Dim Result As String = ""
             Dim Remainder As String = Nominator
             Dim CommaSet = False
 
-            While Number.Length < MaxDigits
+            While Result.Length < MaxDigits
 
                 'Append the comma:
-                If CommaSet = False AndAlso Number <> "" AndAlso BiggerThan(Denominator, Remainder.Remove(Remainder.Length - 1)) Then
-                    Number &= ","
+                If CommaSet = False AndAlso Result <> "" AndAlso BiggerThan(Denominator, Remainder.Remove(Remainder.Length - 1)) Then
+                    Result &= ","
                     CommaSet = True
 
                 End If
 
                 'Appending the digit
-                Number &= IntegerDivision(Remainder, Denominator)
+                Result &= IntegerDivision(Remainder, Denominator)
 
                 'Setting up the ramainder for the next digit:
                 Remainder = Modulus(Remainder, Denominator) & "0"
@@ -290,9 +290,9 @@ Public Class BigNumberCalculator
 
             'Return the answer:
             If IsNegative Then
-                Return "-" & Number
+                Return "-" & Result
             Else
-                Return Number
+                Return Result
             End If
 
         Else
@@ -306,12 +306,12 @@ Public Class BigNumberCalculator
 
             End If
 
-            Dim Number As String = "0,"
+            Dim Result As String = "0,"
             Dim Remainder As String = Nominator & "0"
 
-            While Number.Length < MaxDigits
+            While Result.Length < MaxDigits
                 'Appending the digit
-                Number &= IntegerDivision(Remainder, Denominator)
+                Result &= IntegerDivision(Remainder, Denominator)
 
                 'Setting up the ramainder for the next digit:
                 Remainder = Modulus(Remainder, Denominator) & "0"
@@ -319,9 +319,9 @@ Public Class BigNumberCalculator
 
             'Return the answer:
             If IsNegative Then
-                Return "-" & Number
+                Return "-" & Result
             Else
-                Return Number
+                Return Result
             End If
 
         End If
@@ -352,14 +352,13 @@ Public Class BigNumberCalculator
 
         If (baseIsNegative AndAlso powerIsNegative = False) Then
             Base *= -1
-            Return "-" & Exponent(Base, Power, MaxDigits)
         ElseIf (baseIsNegative = False AndAlso powerIsNegative) Then
             Power *= -1
             Return Divide(1, Exponent(Base, Power, MaxDigits), MaxDigits)
         ElseIf baseIsNegative And powerIsNegative Then
             Power *= -1
             Base *= -1
-            Return "-" & Divide(1, Exponent(Base, Power, MaxDigits), MaxDigits)
+            Return Divide(1, Exponent(Base, Power, MaxDigits), MaxDigits)
         End If
 
 
@@ -406,9 +405,12 @@ Public Class BigNumberCalculator
     ''' <remarks></remarks>
     Public Function Modulus(LeftOperand As String, RightOperand As String) As String
         'Handling corner cases:
-        If RightOperand = "0" Then
+        If RightOperand = "0" Or IsZero(RightOperand) Then
             Return "Undefined"
         ElseIf RightOperand = "1" Then
+            Return "0"
+        End If
+        If LeftOperand = "0" Or IsZero(LeftOperand) Then
             Return "0"
         End If
 
@@ -474,7 +476,7 @@ Public Class BigNumberCalculator
     ''' <returns>Returns LeftOperand \ RightOperand as String</returns>
     ''' <remarks>If the numbers are closer together, the algorithm will be faster.</remarks>
     Public Function IntegerDivision(LeftOperand As String, RightOperand As String) As String
-        'Handling negative numbers
+        'Handling cornercases
         If RightOperand = "0" OrElse LeftOperand = "0" OrElse IsZero(RightOperand) OrElse IsZero(LeftOperand) Then
             Return "0"
         End If
@@ -483,6 +485,22 @@ Public Class BigNumberCalculator
             Return LeftOperand
         End If
 
+        'Handling negative numbers
+        Dim IsNegative = False
+        Dim lefttoperandNegative = LeftOperand(0) = "-"
+        Dim rightoperandNegative = RightOperand(0) = "-"
+        If (lefttoperandNegative AndAlso rightoperandNegative = False) Then
+            IsNegative = True
+            LeftOperand = LeftOperand.Remove(0, 1)
+        ElseIf (lefttoperandNegative = False AndAlso rightoperandNegative) Then
+            RightOperand = RightOperand.Remove(0, 1)
+        ElseIf lefttoperandNegative And rightoperandNegative Then
+            RightOperand = RightOperand.Remove(0, 1)
+            LeftOperand = LeftOperand.Remove(0, 1)
+            IsNegative = False
+        End If
+
+        'Handling another cornercase
         If BiggerThan(RightOperand, LeftOperand) Then
             Return 0
         ElseIf RightOperand = LeftOperand Then
@@ -496,7 +514,7 @@ Public Class BigNumberCalculator
         'First removing bigger versions(*10,*100) of the RightOperand from LeftOperand
         For i = Leftln - rightln To 0 Step -1
             Dim times = (New String("0", (i)))
-            While Leftln - rightln > 0 And BiggerThan(LeftOperand, RightOperand & times)
+            While Leftln - rightln > 0 And (BiggerThan(LeftOperand, RightOperand & times) Or LeftOperand = RightOperand & times)
                 LeftOperand = Subtract(LeftOperand, RightOperand & times)
                 Leftln = LeftOperand.Length
                 count = Add(count, 1 & times)
@@ -510,9 +528,15 @@ Public Class BigNumberCalculator
                 count = Add(count, 1)
             End If
         End While
-        Return count
-    End Function
 
+        'Returning the result
+        If IsNegative Then
+            Return "-" & count
+        Else
+            Return count
+        End If
+    End Function
+   
     ''' <summary>
     ''' Returns the highest number of the two numbers suplied. If both numbers are the same, it will return LeftOperand(same as RightOperand).
     ''' </summary>
@@ -521,11 +545,27 @@ Public Class BigNumberCalculator
     ''' <returns>Returns the highest of the two suplied numbers.</returns>
     ''' <remarks></remarks>
     Public Function Max(LeftOperand As String, RightOperand As String) As String
-
+        'If both operands are equal just return LeftOperand
         If LeftOperand = RightOperand Then
             Return LeftOperand
         End If
 
+        'Handling negative numbers
+        Dim lefttoperandNegative = LeftOperand(0) = "-"
+        Dim rightoperandNegative = RightOperand(0) = "-"
+        If (lefttoperandNegative AndAlso rightoperandNegative = False) Then
+            Return RightOperand
+        ElseIf (lefttoperandNegative = False AndAlso rightoperandNegative) Then
+            Return LeftOperand
+        ElseIf lefttoperandNegative And rightoperandNegative Then
+            RightOperand = RightOperand.Remove(0, 1)
+            LeftOperand = LeftOperand.Remove(0, 1)
+            Return "-" & Min(LeftOperand, RightOperand)
+        End If
+
+
+
+        'Comparing the numbers to find out the max
         If LeftOperand.Length > RightOperand.Length Then
             Return LeftOperand
         ElseIf LeftOperand.Length < RightOperand.Length Then
@@ -544,6 +584,7 @@ Public Class BigNumberCalculator
             Next
         End If
 
+       
 
     End Function
 
@@ -554,11 +595,27 @@ Public Class BigNumberCalculator
     ''' <param name="RightOperand">Must be a whole number</param>
     ''' <returns>Returns the lowest of the two suplied numbers.</returns>
     ''' <remarks></remarks>
-    Public Function min(LeftOperand As String, RightOperand As String) As String
+    Public Function Min(LeftOperand As String, RightOperand As String) As String
+        'If both operands are equal just return LeftOperand
         If LeftOperand = RightOperand Then
             Return LeftOperand
         End If
 
+        'Handling negative numbers
+        Dim lefttoperandNegative = LeftOperand(0) = "-"
+        Dim rightoperandNegative = RightOperand(0) = "-"
+        If (lefttoperandNegative AndAlso rightoperandNegative = False) Then
+            Return LeftOperand
+        ElseIf (lefttoperandNegative = False AndAlso rightoperandNegative) Then
+            Return RightOperand
+        ElseIf lefttoperandNegative And rightoperandNegative Then
+            RightOperand = RightOperand.Remove(0, 1)
+            LeftOperand = LeftOperand.Remove(0, 1)
+            Return "-" & Max(LeftOperand, RightOperand)
+        End If
+
+
+        'Comparing the numbers to find out the minimum
         If LeftOperand.Length > RightOperand.Length Then
             Return RightOperand
         ElseIf LeftOperand.Length < RightOperand.Length Then
@@ -576,7 +633,6 @@ Public Class BigNumberCalculator
                 End If
             Next
         End If
-
 
     End Function
 
@@ -588,9 +644,12 @@ Public Class BigNumberCalculator
     ''' <returns>Returns a boolean value, true if LeftOperand > RightOperand, false in all other cases.</returns>
     ''' <remarks></remarks>
     Public Function BiggerThan(LeftOperand As String, RightOperand As String) As Boolean
+        'If operands are equal this means LeftOperand can't be bigger.
         If LeftOperand = RightOperand Then
             Return False
         End If
+
+        'Handling negative numbers.
         If LeftOperand.Contains("-") And RightOperand.Contains("-") = False Then
             Return False
         ElseIf LeftOperand.Contains("-") = False And RightOperand.Contains("-") = True Then
@@ -599,6 +658,8 @@ Public Class BigNumberCalculator
             LeftOperand = LeftOperand.Remove(0)
             RightOperand = RightOperand.Remove(0)
         End If
+
+        'Figuring out which one is bigger, by length and individual digits.
         If LeftOperand.Length > RightOperand.Length Then
             Return True
         ElseIf LeftOperand.Length < RightOperand.Length Then
@@ -616,22 +677,26 @@ Public Class BigNumberCalculator
                 End If
             Next
         End If
+
     End Function
 
     ''' <summary>
     ''' Returns Number = 0 as Boolean.
     ''' </summary>
     ''' <param name="Number">Must be whole number.</param>
-    ''' <returns>Returns a Boolean value.</returns>
+    ''' <returns>Returns a Boolean value indicating if Number = 0.</returns>
     ''' <remarks></remarks>
     Public Function IsZero(Number As String) As Boolean
-        Dim NumberToCharArray = Number.ToCharArray
+        'Return false if one of the digits doesn't equal 0
         For Digit = 0 To Number.Length - 1
-            If NumberToCharArray(Digit) <> "0" Then
+            If Number(Digit) <> "0" Then
                 Return False
             End If
         Next
+
+        'Returning true in all other cases
         Return True
+
     End Function
 
 End Class
