@@ -19,6 +19,6 @@ You can specify the amount of digits you want, or how many decimal places.`
 
 Allmost all of these will work with 1000 digits, and return the result instantly(Division is still too slow for 1000 digit numbers, though. Up to 300 digits it works fine.)
 
-The code has Function comments and descriptions. Also, the code itself is commented if you want to take a look at it.
+The code has Function comments and descriptions. Also, the code itself is commented if you want to take a look at it. For a detailed explanation of the inner workings you can of course contact me.
 
 ###### All functions are thoroughly tested, but needless to say, i don't take any responsibility for any wrong answers :)
